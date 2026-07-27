@@ -49,7 +49,7 @@ MSG_DISK_LOAD_ERROR: db "Disk read error:", 0
 DAP:
     db 0x10
     db 0x00
-    dw TOTAL_SECTOR_COUNT
+    dw MACRO_TOTAL_SECTOR_COUNT
     dw 0x0000
     dw 0x1000
     dd 0x00000001

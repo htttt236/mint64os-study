@@ -1,10 +1,15 @@
 [org 0x7c00]
 [bits 16]
+
 %ifndef KERNEL_SECTOR_COUNT
     %define KERNEL_SECTOR_COUNT 2
 %endif
-TOTAL_SECTOR_COUNT equ KERNEL_SECTOR_COUNT
+
 jmp 0x0000:start
+
+TOTAL_SECTOR_COUNT:    dw MACRO_TOTAL_SECTOR_COUNT
+KERNEL32_SECTOR_COUNT: dw MACRO_KERNEL32_SECTOR_COUNT
+
 start:
     xor ax, ax
     mov ds, ax

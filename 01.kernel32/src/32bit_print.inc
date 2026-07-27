@@ -1,3 +1,6 @@
+%ifndef _32BIT_PRINT_INC
+%define _32BIT_PRINT_INC
+
 [bits 32]
 VIDEO_MEEMORY equ 0xb8000
 pm_print:
@@ -36,3 +39,5 @@ pm_print_end:
     popad
     pop ebp
     ret
+
+%endif

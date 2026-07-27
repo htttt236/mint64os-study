@@ -1,6 +1,15 @@
-GCC = x86_64-elf-gcc -ffreestanding -m32 -O2
+GCC = x86_64-elf-gcc -ffreestanding -m32 -O2 -mno-sse -mno-sse2 -mno-sse3 -mno-mmx -fno-pic -fno-pie -fno-builtin
 LD = x86_64-elf-ld -T linker.ld
 OBJCOPY = x86_64-elf-objcopy -j .text -j .data -j .rodata -j .bss -S -O binary
+
+ENTRY_OBJ = temp/entrypoint.o
+
+C_SOURCES = $(wildcard src/*.c)
+C_OBJECTS = $(patsubst src/%.c, temp/%.o, $(C_SOURCES))
+
+ASM_SOURCES = $(wildcard src/*.asm)
+ASM_OBJECTS = $(filter-out $(ENTRY_OBJ), $(patsubst src/%.asm, temp/%.o, $(ASM_SOURCES)))
+
 
 all: kernel32.bin
 
@@ -8,19 +17,19 @@ kernel32.bin: temp/kernel32.elf
 	$(OBJCOPY) $< $@
 	truncate -s %512 $@
 
-temp/kernel32.elf: temp/entrypoint.o temp/main.o
+temp/kernel32.elf: $(ENTRY_OBJ) $(ASM_OBJECTS) $(C_OBJECTS)
 	$(LD) -o $@ $^
 
-temp/main.o: src/main.c
+temp/%.o: src/%.c
 	@mkdir -p temp
 	$(GCC) -MMD -c $< -o $@
 
-temp/entrypoint.o: src/entrypoint.asm src/32bit_print.inc src/gdt.inc
+temp/%.o: src/%.asm
 	@mkdir -p temp
-	nasm -f elf32 -I src/ -o $@ $<
+	nasm -MD $(@:.o=.d) -f elf32 -I src/ -o $@ $<
 
 clean:
 	rm -f kernel32.bin
 	rm -rf temp/*.o temp/*.d temp/*.elf
 
--include temp/main.d 
+-include $(C_OBJECTS:.o=.d) $(ASM_OBJECTS:.o=.d) $(ENTRY_OBJ:.o=.d)

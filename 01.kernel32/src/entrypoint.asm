@@ -7,6 +7,7 @@ start:
     mov ds, ax
     mov es, ax
 
+    ; A20 게이트 활성화
     mov ax, 0x2401
     int 0x15
 
@@ -46,10 +47,10 @@ init_pm:
     extern main
     call main
 
-A20gate_error
     jmp $
 
 %include "gdt.inc"
+%include "gdt_seg.inc"
 %include "32bit_print.inc"
 
 MSG_PM_SUCCESS db "Landed in 32-bit Protected Mode", 0
