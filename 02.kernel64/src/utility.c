@@ -1,5 +1,6 @@
 #include "utility.h"
 #include "types.h"
+#include "assembly_utility.h"
 
 void kPrintString(int x, int y, const char* pcString){
     character_t* pstScreen = (character_t*)0xb8000;
@@ -37,4 +38,22 @@ int kMemCmp(const void* pvDestination, const void* pvSource, int iSize){
         }
     }
     return 0;
+}
+
+// rflags 레지스터의 인터럽트 플래그를 변경하고 이전 인터럽트 플래그의 상태를 반환
+bool kSetInterruptFlag(bool bEnableInterrupt){
+    qword qwRFLAGS;
+
+    qwRFLAGS = kReadRFLAGS();// 이전 값 저장
+    if(bEnableInterrupt == true){
+        kEnableInterrupt();
+    }
+    else{
+        kDisableInterrupt();
+    }
+
+    if(qwRFLAGS & 0x0200){// 이전의 인터럽트 상태를 반환
+        return true;
+    }
+    return false;
 }

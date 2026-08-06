@@ -7,5 +7,6 @@ void kPrintString(int x, int y, const char* pcString);
 void kMemSet(void* pvDestination, byte bData, int iSize);
 int kMemCpy(void* pvDestination, const void* pvSource, int iSize);
 int kMemCmp(const void* pvDestination, const void* pvSource, int iSize);
+bool kSetInterruptFlag(bool bEnableInterrupt);
 
 #endif /*__UTILITY_H__*/

@@ -1,6 +1,8 @@
 #include "types.h"
 #include "assembly_utility.h"
 #include "keyboard.h"
+#include "queue.h"
+#include "utility.h"
 
 // 출력 버퍼에 수신된 데이터가 있는지 확인
 bool kIsOutputBufferFull(){
@@ -18,8 +20,40 @@ bool kIsInputBufferFull(){
     return false;
 }
 
+// ack 대기
+bool kWaitForACKAndPutOtherScanCode(){
+    byte bData;
+    bool bResult = false;
+
+    // 키 데이터 고려해서 100개까지 수신
+    for(int j=0; j<100; j++){
+        //대기
+        for(int i=0; i<0xffff; i++){
+            if(kIsOutputBufferFull()==true){
+                break;
+            }
+        }
+        // ack(0xfa) 확인
+        bData = kInPortByte(0x60);
+        if(bData == 0xfa){
+            bResult = true;
+            break;
+        }
+        else{
+            kConvertScanCodeAndPutQueue(bData);
+        }
+    }
+    return bResult;
+}
+
 // 키보드 활성화
 bool kActivateKeyboard(){
+    bool bPreviousInterrupt;
+    bool bResult;
+
+    // 인터럽트 막고 이전 인터럽트 상태 저장
+    bPreviousInterrupt = kSetInterruptFlag(false);
+
     kOutPortByte(0x64, 0xae);// 0xae: 키보드 컨트롤러 활성화
 
     // 대기
@@ -31,21 +65,12 @@ bool kActivateKeyboard(){
 
     kOutPortByte(0x60,0xf4);// 0xf4: 키보드 활성화
 
-    // 키 데이터 고려해서 100개까지 수신
-    for(int j=0; j<100; j++){
-        //대기
-        for(int i=0; i<0xffff; i++){
-            if(kIsOutputBufferFull() == true){
-                break;
-            }
-        }
-        // ack(0xfa) 확인
-        if(kInPortByte(0x60) == 0xfa){
-            return true;
-        }
+    //ack 대기
+    bResult = kWaitForACKAndPutOtherScanCode();
+    //이전 인터럽트 상태 복원
+    kSetInterruptFlag(bPreviousInterrupt);
 
-    }
-    return false;
+    return bResult;
 }
 
 // 키 값 읽기
@@ -101,7 +126,13 @@ void kReboot(){
 
 // 상태 led 제어
 bool kChangeKeyboardLED(bool bCapsLockOn, bool bNumLockOn, bool bScrollLockOn){
-    
+    bool bPreviousInterrupt;
+    bool bResult;
+    byte bData;
+
+    //인터럽트 막기, 이전 상태 저장
+    bPreviousInterrupt = kSetInterruptFlag(false);
+
     // 커맨드 처리될 때까지 대기
     for(int i=0; i<0xffff; i++){
         if(kIsInputBufferFull() == false){
@@ -142,22 +173,12 @@ bool kChangeKeyboardLED(bool bCapsLockOn, bool bNumLockOn, bool bScrollLockOn){
         }
     }
 
-    // ack(0xfa) 읽기
-    for(j=0; j<100; j++){
-        for(int i=0; i<0xffff; i++){
-            if(kIsOutputBufferFull() == true){
-                break;
-            }
-        }
-        if(kInPortByte(0x60) == 0xfa){
-            break;
-        }
-    }
-    if(j>=100){
-        return false;
-    }
-
-    return true;
+    // ack 대기
+    bResult = kWaitForACKAndPutOtherScanCode();
+    // 이전 상태 복원
+    kSetInterruptFlag(bPreviousInterrupt);
+    
+    return bResult;
 }
 
 // 키보드 상태
@@ -169,6 +190,10 @@ static KEYBOARDMANAGER gs_stKeyboardManager = {
     false,  // bExtendedCodeIn
     0       // iSkipCountForPause
 };
+// 키를 저장하는 큐와 버퍼 정의
+static QUEUE gs_stKeyQueue;
+static KEYDATA gs_vstKeyQueueBuffer[KEY_MAXQUEUECOUNT];
+
 // 스캔 코드를 ASCII 코드로 변환하는 테이블
 static KEYMAPPINGENTRY gs_vstKeyMappingTable[KEY_MAPPINGTABLEMAXCOUNT] = {
     /*  0   */  {   KEY_NONE        ,   KEY_NONE        },
@@ -417,4 +442,57 @@ bool kConvertScanCodeToASCIICode(byte bScanCode, byte* pbASCIICode, byte* pbFlag
     //상태 갱신
     UpdateCombinationKeystatusAndLED(bScanCode);
     return true;
+}
+
+// 키보드 초기화
+bool kInitializeKeyboard(){
+
+    // 큐 초기화
+    kInitializeQueue(&gs_stKeyQueue, gs_vstKeyQueueBuffer, KEY_MAXQUEUECOUNT, 
+        sizeof(KEYDATA));
+    // 키보드 활성화
+    return kActivateKeyboard();
+}
+
+// 스캔 코드를 내부적으로 사용하는 키 데이터로 바꾼 후 키 큐에 삽입
+bool kConvertScanCodeAndPutQueue(byte bScanCode){
+    KEYDATA stData;
+    bool bResult = false;
+    bool bPreviousInterrupt;
+
+    // 스캔 코드를 키 데이터에 삽입
+    stData.bScanCode = bScanCode;
+
+    // 스캔 코드를 ASCII 코드와 키 상태로 변환하여 키 데이터에 삽입
+    if(kConvertScanCodeToASCIICode(bScanCode, &(stData.bASCIICode), 
+        &(stData.bFlags)) == true){
+        
+        // 인터럽트 막기, 이전 상태 저장
+        bPreviousInterrupt = kSetInterruptFlag(false);
+        // 키 큐에 삽입
+        bResult = kPutQueue(&gs_stKeyQueue, &stData);
+        // 이전 상태 복원
+        kSetInterruptFlag(bPreviousInterrupt);
+    }
+    return bResult;
+}
+
+// 키 큐에서 키 데이터를 제거
+bool kGetKeyFromKeyQueue(KEYDATA* pstData){
+    bool bResult;
+    bool bPreviousInterrupt;
+
+    // 큐가 비었으면 키 데이터를 꺼낼 수 없음
+    if(kIsQueueEmpty(&gs_stKeyQueue) == true){
+        return false;
+    }
+    //인터럽트 막기, 이전 상태 저장
+    bPreviousInterrupt = kSetInterruptFlag(false);
+
+    // 키 큐에서 키 데이터 제거
+    bResult = kGetQueue(&gs_stKeyQueue, pstData);
+
+    // 이전 상태 복원
+    kSetInterruptFlag(bPreviousInterrupt);
+    return bResult;
 }

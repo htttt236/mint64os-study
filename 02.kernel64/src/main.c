@@ -25,15 +25,14 @@ void main(){
     kLoadIDTR(IDTR_STARTADDRESS);
     kPrintString(19, 14, "pass");
 
-    kPrintString(0, 15, "keyboard activate......");
-
+    kPrintString(0, 15, "keyboard activate and queue initialize......");
     // 키보드 활성화
-    if(kActivateKeyboard() == true){
-        kPrintString(23, 15, "pass");
+    if(kInitializeKeyboard() == true){
+        kPrintString(44, 15, "pass");
         kChangeKeyboardLED(false, true, false);
     }
     else{
-        kPrintString(23, 15, "fail");
+        kPrintString(44, 15, "fail");
         while(true);
     }
 
@@ -48,17 +47,23 @@ void main(){
     byte bFlags;
     byte bTemp;
     int i = 0;
+    KEYDATA stData;
     while(true){
-        if(kIsOutputBufferFull() == true){
-            bTemp = kGetKeyboardScanCode();
-            
-            if(kConvertScanCodeToASCIICode(bTemp, &(vcTemp[0]), &bFlags) == true){
-                if(bFlags & KEY_FLAGS_DOWN){
-                    kPrintString(i++, 17, vcTemp);
+        // 키 큐에 데이터가 있으면 키를 처리
+        if(kGetKeyFromKeyQueue(&stData) == true){
 
-                    if(vcTemp[0] == '0'){// 0누르면 Divide Error 발생
-                        __asm__ __volatile__ ("int $0");
-                    }
+            // 키가 눌렸으면 키의 ASCII 코드 값을 화면에 출력
+            if(stData.bFlags & KEY_FLAGS_DOWN){
+
+                // 키 데이터의 ASCII 코드 값을 저장
+                vcTemp[0] = stData.bASCIICode;
+                kPrintString(i++, 17, vcTemp);
+
+                // 0이 입력되면 Divide Error 예외 발생시킴
+                if(vcTemp[0] == '0'){
+                    volatile int a = 1;
+                    a = bTemp / 0;
+                    //__asm__ __volatile__ ("int $0");
                 }
             }
         }
