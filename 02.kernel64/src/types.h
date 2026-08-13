@@ -16,7 +16,7 @@
 typedef struct kCharacterStruct{
     byte bCharacter;
     byte bAttribute;
-} character_t;
+}CHARACTER;
 
 #pragma pack(pop)
 #endif /*__TYPES_H__*/

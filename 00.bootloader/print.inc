@@ -8,7 +8,7 @@ clear_display:
 
 clear_display_loop:
     mov byte [es:di], 0
-    mov byte [es:di+1], 0x0f
+    mov byte [es:di+1], 0x07
 
     add di, 2
     cmp di, 80*25*2

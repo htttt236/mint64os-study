@@ -18,7 +18,7 @@
 #define KEY_ENTER       '\n'
 #define KEY_TAB         '\t'
 #define KEY_ESC         0x1B
-#define KEY_BACKSPACE   0x08
+#define KEY_BACKSPACE   '\b'
 
 #define KEY_CTRL        0x81
 #define KEY_LSHIFT      0x82

@@ -177,10 +177,10 @@ void kSetIDTEntry(IDTENTRY* pstEntry, void* pvHandler, word wSelector,
 }
 
 void kDummyHandler(void){
-    kPrintString(0, 0, "====================================================");
-    kPrintString(0, 1, "          Dummy Interrupt Handler Execute~!!!       ");
-    kPrintString(0, 2, "           Interrupt or Exception Occur~!!!!        ");
-    kPrintString(0, 3, "====================================================");
+    kPrintStringXY(0, 0, "====================================================");
+    kPrintStringXY(0, 1, "          Dummy Interrupt Handler Execute~!!!       ");
+    kPrintStringXY(0, 2, "           Interrupt or Exception Occur~!!!!        ");
+    kPrintStringXY(0, 3, "====================================================");
 
     while(1) ;
 }
