@@ -113,7 +113,7 @@ void kInitializeIDTTables(){
     kSetIDTEntry(&(pstEntry[21]), kISRControlProtectionException, 0x08, IDT_FLAGS_IST1,
         IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
     for(int i=22; i<=27; i++){
-        kSetIDTEntry(&(pstEntry[22]), kISRETCException, 0x08, IDT_FLAGS_IST1,
+        kSetIDTEntry(&(pstEntry[i]), kISRETCException, 0x08, IDT_FLAGS_IST1,
             IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT);
     }
     kSetIDTEntry(&(pstEntry[28]), kISRHypervisorInjectionException, 0x08, IDT_FLAGS_IST1,

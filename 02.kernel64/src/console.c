@@ -92,7 +92,7 @@ int kConsolePrintString(const char* pcBuffer){
             // 다음 8의 배수로 옮김
             iPrintOffset += 8 - (iPrintOffset % 8);
         }
-        else if(pcBuffer[i] == KEY_BACKSPACE){// backspace 처리
+        else if(pcBuffer[i] == '\b'){// backspace 처리
             //커서 한 칸 전으로
             iPrintOffset--;
         }

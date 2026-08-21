@@ -11,5 +11,6 @@ void kLoadIDTR(qword qwIDTRAddress);
 void kEnableInterrupt();
 void kDisableInterrupt();
 qword kReadRFLAGS();
+qword kReadTSC();
 
 #endif /*__ASSEMBLY_UTILITY_H__*/
