@@ -57,6 +57,8 @@ global kISRMouse, kISRCoprocessor, kISRHDD1, kISRHDD2, kISRETCInterrupt
 %macro KLOADCONTEXT 0
     pop gs
     pop fs
+    
+    ; es, ds는 직접 꺼내 복원 불가
     pop rax
     mov es, ax
     pop rax

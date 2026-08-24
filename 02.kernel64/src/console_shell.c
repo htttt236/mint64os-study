@@ -6,6 +6,7 @@
 #include "pit.h"
 #include "rtc.h"
 #include "assembly_utility.h"
+#include "task.h"
 
 
 // 커맨드 테이블 정의
@@ -22,6 +23,7 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] =
     {"rdtsc", "Read Time Stamp Counter", kReadTimeStampCounter},
     {"cpuspeed", "measure processor speed", kMeasureProcessorSpeed},
     {"date", "show date and time", kShowDateAndTime},
+    {"createtask", "create task", kCreateTestTask}
 };
 
 // 셸의 메인 루프
@@ -327,4 +329,46 @@ void kShowDateAndTime(const char* pcParameterBuffer){
     kPrintf("date: %d/%d/%d %s, ",
         wYear, bMonth, bDayOfMonth, kConvertDayOfWeekToString(bDayOfWeek));
     kPrintf("time: %d:%d:%d\n", bHour, bMinute, bSecond);
+}
+
+
+
+// TCB 자료구조와 스택 정의
+static TCB gs_vstTask[2] = {0, };
+static qword gs_vstStack[1024] = {0, };
+
+// 태스크 전환을 테스트하는 태스크
+void kTestTask(){
+    int i = 0;
+
+    while(true){
+        // 메시지 출력하고 키 입력 대기
+        kPrintf("[%d] This message is from kTestTask. Press any key to switch "
+            "kConsoleShell.\n", i++);
+        kGetch();
+        
+        // 키가 입력되면 태스크 전환
+        kSwitchContext(&(gs_vstTask[1].stContext), &(gs_vstTask[0].stContext));
+    }
+}
+
+// 태스크 생성해서 멀티태스킹 수행
+void kCreateTestTask(const char* pcParameterBuffer){
+    KEYDATA stData;
+    int i= 0;
+
+    // 태스크 설정
+    kSetUpTask(&(gs_vstTask[1]), 1, 0, (qword)kTestTask, &(gs_vstTask), sizeof(gs_vstStack));
+
+    // 'q'키가 입력될 때까지 수행
+    while(true){
+        // 메시지 출력하고 키 입력 대기
+        kPrintf("[%d] This message is from kConsoleShell. Press any key to "
+            "switch TestTask.\n", i++);
+        if(kGetch() == 'q'){
+            break;
+        }
+        // 키 입력되면 태스크 전환
+        kSwitchContext(&(gs_vstTask[0].stContext), &(gs_vstTask[1].stContext));
+    }
 }
