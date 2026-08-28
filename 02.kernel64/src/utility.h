@@ -21,5 +21,9 @@ void kReverseStringLen(char* pcBuffer, int iLength);
 void kReverseString(char* pcBuffer);
 int kSprintf(char* pcBuffer, const char* pcFormatString, ...);
 int kVSPrintf(char* pcBuffer, const char* pcFormatString, va_list ap);
+qword kGetTickCount();
+
+
+extern volatile qword g_qwTickCount;
 
 #endif /*__UTILITY_H__*/

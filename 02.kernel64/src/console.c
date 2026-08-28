@@ -71,8 +71,8 @@ int kConsolePrintString(const char* pcBuffer){
         // 출력 위치가 최댓값(80*25)을 벗어나면 스크롤 처리
         if(iPrintOffset >= (CONSOLE_HEIGHT * CONSOLE_WIDTH)){
             //맨 윗줄 제외하고 한 줄 위로 복사
-            kMemCpy(CONSOLE_VIDEOMEMORYADDRESS, 
-                CONSOLE_VIDEOMEMORYADDRESS + CONSOLE_WIDTH * sizeof(CHARACTER), 
+            kMemCpy((void*)CONSOLE_VIDEOMEMORYADDRESS, 
+                (void*)(CONSOLE_VIDEOMEMORYADDRESS + CONSOLE_WIDTH * sizeof(CHARACTER)), 
                 (CONSOLE_HEIGHT - 1) * CONSOLE_WIDTH * sizeof(CHARACTER));
             //마지막줄 공백으로 채우기
             for(int j = (CONSOLE_HEIGHT-1) * CONSOLE_WIDTH;

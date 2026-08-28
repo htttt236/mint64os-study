@@ -21,7 +21,7 @@ void kReadRTCTime(byte* pbHour, byte* pbMinute, byte* pbSecond){
     // 초
     kOutPortByte(RTC_CMOSADDRESS, RTC_ADDRESS_SECOND);
     bData = kInPortByte(RTC_CMOSDATA);
-    pbSecond = RTC_BCDTOBINARY(bData);
+    *pbSecond = RTC_BCDTOBINARY(bData);
 }
 
 // CMOS 메모리에서 RTC 컨트롤러가 저장한 현재 일자를 읽음

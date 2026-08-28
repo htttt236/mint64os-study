@@ -6,6 +6,8 @@
 #include "pic.h"
 #include "console.h"
 #include "console_shell.h"
+#include "task.h"
+#include "pit.h"
 
 
 void main(){
@@ -33,6 +35,12 @@ void main(){
     kPrintf("total RAM size check......");
     kCheckTotalRAMSize();
     kPrintf("pass, size = %d MB\n", kGetTotalRAMSize());
+
+    kPrintf("TCB pool and scheduler initialize......");
+    kInitializeScheduler();
+    kPrintf("pass\n");
+    // 1ms당 한 번씩 인터럽트가 발생하도록 설정
+    kInitializePIT(MSTOCOUNT(1), 1);
 
     kPrintf("keyboard activate and queue initialize......");
     // 키보드 활성화

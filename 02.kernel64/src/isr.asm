@@ -4,6 +4,7 @@ SECTION .text
 
 GDT_KERNELDATASEGMENT equ 0x10
 extern kCommonExceptionHandler, kCommonInterruptHandler, kKeyboardHandler
+extern kTimerHandler
 
 global kISRDivideError, kISRDebug, kISRNMI, kISRBreakPoint, kISROverflow
 global kISRBoundRangeExceeded, kISRInvalidOpcode, kISRDeviceNotAvailable
@@ -378,7 +379,7 @@ kISRTimer:
     KSAVECONTEXT
 
     mov rdi, 32
-    call kCommonInterruptHandler
+    call kTimerHandler
 
     KLOADCONTEXT
     iretq

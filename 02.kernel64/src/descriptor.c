@@ -2,6 +2,7 @@
 #include "utility.h"
 #include "types.h"
 #include "isr.h"
+#include "console.h"
 
 //=================GDT 및 TSS============================================
 void kInitializeGDTTableAndTSS(){
