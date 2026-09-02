@@ -59,6 +59,7 @@ void main(){
     kEnableInterrupt();
     kPrintf("pass\n");
 
-    // shell 시작
+    // idle task를 생성하고 셸을 시작
+    kCreateTask(TASK_FLAGS_LOWEST | TASK_FLAGS_IDLE, (qword)kIdleTask);
     kStartConsoleShell();
 }

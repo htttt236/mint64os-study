@@ -24,6 +24,11 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] =
     {"cpuspeed", "measure processor speed", kMeasureProcessorSpeed},
     {"date", "show date and time", kShowDateAndTime},
     {"createtask", "create task, ex)createtask 1(type) 10(count)", kCreateTestTask},
+    {"changepriority", "change task priority, ex)changepriority 1(ID) 2(priority)",
+        kChangeTaskPriority},
+    {"tasklist", "show task list", kShowTaskList},
+    {"killtask", "end task, ex)killtask 1(ID)", kKillTask},
+    {"cpuload", "show processor load", kCPULoad},
 };
 
 // 셸의 메인 루프
@@ -144,7 +149,7 @@ int kGetNextParameter(PARAMETERLIST* pstList, char* pcParameter){
 //===============커맨드 처리 코드========================
 
 // 셸 도움말 출력
-void kHelp(const char* pcCommandBuffer){
+static void kHelp(const char* pcCommandBuffer){
     int iCount;
     int iCursorX, iCursorY;
     int iLength, iMaxCommandLength = 0;
@@ -173,19 +178,19 @@ void kHelp(const char* pcCommandBuffer){
 }
 
 // 화면 지우기
-void kCls(const char* pcParameterBuffer){
+static void kCls(const char* pcParameterBuffer){
     // 맨 윗줄은 비우기 (디버깅용)
     kClearScreen();
     kSetCursor(0, 1);
 }
 
 // 총 메모리 크기 출력
-void kShowTotalRAMSize(const char* pcParameterBuffer){
+static void kShowTotalRAMSize(const char* pcParameterBuffer){
     kPrintf("total RAM size = %d MB\n", kGetTotalRAMSize());
 }
 
 // 문자열로 된 숫자를 숫자로 변환하여 화면에 출력
-void kStringToDecimalHexTest(const char* pcParameterBuffer){
+static void kStringToDecimalHexTest(const char* pcParameterBuffer){
     char vcParameter[100];
     int iLength;
     PARAMETERLIST stList;
@@ -219,7 +224,7 @@ void kStringToDecimalHexTest(const char* pcParameterBuffer){
 }
 
 // pc 재시작
-void kShutdown(const char* pcParameterBuffer){
+static void kShutdown(const char* pcParameterBuffer){
     kPrintf("System shutdown start...\n");
 
     // 키보드 컨트롤러를 통해 pc 재시작
@@ -229,7 +234,7 @@ void kShutdown(const char* pcParameterBuffer){
 }
 
 // PIT 컨트롤러의 카운터0 설정
-void kSetTimer(const char* pcParameterBuffer){
+static void kSetTimer(const char* pcParameterBuffer){
     char vcParameter[100];
     PARAMETERLIST stList;
     long lValue;
@@ -257,7 +262,7 @@ void kSetTimer(const char* pcParameterBuffer){
 }
 
 // PIT 컨트롤러를 직접 사용하여 ms 동안 대기
-void kWaitUsingPIT(const char* pcParameterBuffer){
+static void kWaitUsingPIT(const char* pcParameterBuffer){
     char vcParameter[100];
     int iLength;
     PARAMETERLIST stList;
@@ -287,7 +292,7 @@ void kWaitUsingPIT(const char* pcParameterBuffer){
 }
 
 // 타임 스탬프 카운터를 읽음
-void kReadTimeStampCounter(const char* pcParameterBuffer){
+static void kReadTimeStampCounter(const char* pcParameterBuffer){
     qword qwTSC;
 
     qwTSC = kReadTSC();
@@ -295,7 +300,7 @@ void kReadTimeStampCounter(const char* pcParameterBuffer){
 }
 
 // 프로세서의 속도를 측정
-void kMeasureProcessorSpeed(const char* pcParameterBuffer){
+static void kMeasureProcessorSpeed(const char* pcParameterBuffer){
     qword qwLastTSC, qwTotalTSC = 0;
 
     kPrintf("now measuring");
@@ -317,7 +322,7 @@ void kMeasureProcessorSpeed(const char* pcParameterBuffer){
 }
 
 // RTC 컨트롤러에 저장된 일자 및 시간 정보를 표시
-void kShowDateAndTime(const char* pcParameterBuffer){
+static void kShowDateAndTime(const char* pcParameterBuffer){
     byte bSecond, bMinute, bHour;
     byte bDayOfWeek, bDayOfMonth, bMonth;
     word wYear;
@@ -336,7 +341,7 @@ void kShowDateAndTime(const char* pcParameterBuffer){
 
 
 // 태스크 1: 화면 테두리를 돌면서 문자를 출력
-void kTestTask1(){
+static void kTestTask1(){
     byte bData;
     int i = 0, iX = 0, iY = 0, iMargin;
     CHARACTER* pstScreen = (CHARACTER*)CONSOLE_VIDEOMEMORYADDRESS;
@@ -347,7 +352,7 @@ void kTestTask1(){
     iMargin = (pstRunningTask->stLink.qwID & 0xffffffff) % 10;
 
     // 화면 네 귀퉁이를 돌면서 문자 출력
-    while(true){
+    for(int j=0; j<20000; j++){
         switch(i){
         case 0:
             iX++;
@@ -385,10 +390,12 @@ void kTestTask1(){
         // 다른 태스크로 전환
         kSchedule();
     }
+
+    kExitTask();
 }
 
 // 태스크 2: 자신의 ID를 참고하여 특정 위치에 회전하는 바람개비를 출력
-void kTestTask2(){
+static void kTestTask2(){
     int i = 0, iOffset;
     CHARACTER* pstScreen = (CHARACTER*)CONSOLE_VIDEOMEMORYADDRESS;
     TCB* pstRunningTask;
@@ -412,7 +419,7 @@ void kTestTask2(){
 }
 
 // 태스크 생성해서 멀티태스킹 수행
-void kCreateTestTask(const char* pcParameterBuffer){
+static void kCreateTestTask(const char* pcParameterBuffer){
     PARAMETERLIST stList;
     char vcType[30];
     char vcCount[30];
@@ -427,7 +434,7 @@ void kCreateTestTask(const char* pcParameterBuffer){
     // 타입 1 태스크 생성
     case 1:
         for(i=0; i<kAToI(vcCount, 10); i++){
-            if(kCreateTask(0, (qword)kTestTask1) == null){
+            if(kCreateTask(TASK_FLAGS_LOW, (qword)kTestTask1) == null){
                 break;
             }
         }
@@ -438,7 +445,7 @@ void kCreateTestTask(const char* pcParameterBuffer){
     case 2:
     default:
         for(i=0; i<kAToI(vcCount, 10); i++){
-            if(kCreateTask(0, (qword)kTestTask2) == null){
+            if(kCreateTask(TASK_FLAGS_LOW, (qword)kTestTask2) == null){
                 break;
             }
         }
@@ -446,4 +453,93 @@ void kCreateTestTask(const char* pcParameterBuffer){
         kPrintf("task2 %d created\n", i);
         break;
     }
+}
+
+// 태스크의 우선순위를 변경
+static void kChangeTaskPriority(const char* pcParameterBuffer){
+    PARAMETERLIST stList;
+    char vcID[30];
+    char vcPriority[30];
+    qword qwID;
+    byte bPriority;
+
+    // 파라미터 추출
+    kInitializeParameter(&stList, pcParameterBuffer);
+    kGetNextParameter(&stList, vcID);
+    kGetNextParameter(&stList, vcPriority);
+
+    // 태스크의 우선순위를 변경
+    if(kMemCmp(vcID, "0x", 2) == 0){
+        qwID = kAToI(vcID + 2, 16);
+    }
+    else{
+        qwID = kAToI(vcID, 10);
+    }
+
+    bPriority = kAToI(vcPriority, 10);
+
+    kPrintf("change task priority ID [0x%q] priority[%d] ", qwID, bPriority);
+    if(kChangePriority(qwID, bPriority) == true){
+        kPrintf("success\n");
+    }
+    else{
+        kPrintf("fail\n");
+    }
+}
+
+// 현재 생성된 모든 태스크의 정보를 출력
+static void kShowTaskList(const char* pcParameterBuffer){
+    TCB* pstTCB;
+    int iCount = 0;
+
+    kPrintf("=========== task total count [%d] ===========\n", kGetTaskCount());
+    for(int i=0; i<TASK_MAXCOUNT; i++){
+        // TCB를 구해서 TCB가 사용 중이면 ID를 출력
+        pstTCB = kGetTCBInTCBPool(i);
+        if((pstTCB->stLink.qwID >> 32) != 0){
+            // 태스크가 10개 출력될 때마다, 계속 태스크 정보를 표시할지 여부를 확인
+            if((iCount != 0) && (iCount % 10) == 0){
+                kPrintf("press any key to continue... ('q' is exit) : ");
+                if(kGetch() == 'q'){
+                    kPrintf("\n");
+                    break;
+                }
+                kPrintf("\n");
+            }
+            kPrintf("[%d] Task ID[0x%q], Priority[%d], Flags[0x%q]\n", 1 + iCount++,
+                    pstTCB->stLink.qwID, GETPRIORITY(pstTCB->qwFlags), pstTCB->qwFlags);
+        }
+    }
+}
+
+// 태스크 종료
+static void kKillTask(const char* pcParameterBuffer){
+    PARAMETERLIST stList;
+    char vcID[30];
+    qword qwID;
+
+    // 파라미터를 추출
+    kInitializeParameter(&stList, pcParameterBuffer);
+    kGetNextParameter(&stList, vcID);
+
+    // 태스크를 종료
+    if(kMemCmp(vcID, "0x", 2) == 0){
+        qwID = kAToI(vcID + 2, 16);
+    }
+    else{
+        qwID = kAToI(vcID, 10);
+    }
+
+    kPrintf("kill task ID [0x%q] ", qwID);
+    if(kEndTask(qwID) == true){
+        kPrintf("success\n");
+    }
+    else{
+        kPrintf("fail\n");
+    }
+}
+
+// 프로세서의 사용률 표시
+static void kCPULoad(const char* pcParameterBuffer){
+    kPrintf("processor load: %d%%\n", kGetProcessorLoad());
 }

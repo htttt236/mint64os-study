@@ -124,7 +124,9 @@ byte kGetch(){
     //키가 눌릴 때까지 대기
     while(true){
         // 키 큐에 데이터가 수신될 때까지 대기
-        while(kGetKeyFromKeyQueue(&stData) == false){}
+        while(kGetKeyFromKeyQueue(&stData) == false){
+            kSchedule();
+        }
 
         // 키가 눌렸다는 데이터가 수신되면 ASCII 코드를 반환
         if(stData.bFlags & KEY_FLAGS_DOWN){

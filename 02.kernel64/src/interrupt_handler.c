@@ -54,7 +54,7 @@ void kKeyboardHandler(int iVectorNumber){
     kPrintStringXY(0, 0, vcBuffer);
     //==================================================================
 
-    // 키보드 컨트롤러에서 데이털ㄹ 읽어 ASCII로 변환하여 큐에 삽입
+    // 키보드 컨트롤러에서 데이터를 읽어 ASCII로 변환하여 큐에 삽입
     if(kIsOutputBufferFull() == true){
         bTemp = kGetKeyboardScanCode();
         kConvertScanCodeAndPutQueue(bTemp);

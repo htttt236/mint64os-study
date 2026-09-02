@@ -6,7 +6,7 @@ global kInPortByte, kOutPortByte
 global kLoadGDTR, kLoadTR, kLoadIDTR
 global kEnableInterrupt, kDisableInterrupt, kReadRFLAGS
 global kReadTSC
-global kSwitchContext
+global kSwitchContext, kHlt
 ; 포트로브터 1바이트 읽기
 ; param1: 포트 번호
 kInPortByte:
@@ -188,3 +188,10 @@ kSwitchContext:
     ; Context 자료구조에서 레지스터를 복원
     KLOADCONTEXT
     iretq
+
+
+; 프로세서를 쉬게 함
+kHlt:
+    hlt     ; 프로세서를 대기 상태로 진입시킴
+    hlt
+    ret
