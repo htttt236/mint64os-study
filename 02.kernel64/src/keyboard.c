@@ -3,6 +3,7 @@
 #include "keyboard.h"
 #include "queue.h"
 #include "utility.h"
+#include "synchronization.h"
 
 // 출력 버퍼에 수신된 데이터가 있는지 확인
 bool kIsOutputBufferFull(){
@@ -467,12 +468,12 @@ bool kConvertScanCodeAndPutQueue(byte bScanCode){
     if(kConvertScanCodeToASCIICode(bScanCode, &(stData.bASCIICode), 
         &(stData.bFlags)) == true){
         
-        // 인터럽트 막기, 이전 상태 저장
-        bPreviousInterrupt = kSetInterruptFlag(false);
+        // 임계 영역 시작
+        bPreviousInterrupt = kLockForSystemData();
         // 키 큐에 삽입
         bResult = kPutQueue(&gs_stKeyQueue, &stData);
-        // 이전 상태 복원
-        kSetInterruptFlag(bPreviousInterrupt);
+        // 임계 영역 끝
+        kUnlockForSystemData(bPreviousInterrupt);
     }
     return bResult;
 }
@@ -486,13 +487,13 @@ bool kGetKeyFromKeyQueue(KEYDATA* pstData){
     if(kIsQueueEmpty(&gs_stKeyQueue) == true){
         return false;
     }
-    //인터럽트 막기, 이전 상태 저장
-    bPreviousInterrupt = kSetInterruptFlag(false);
+    // 임계 영역 시작
+    bPreviousInterrupt = kLockForSystemData();
 
     // 키 큐에서 키 데이터 제거
     bResult = kGetQueue(&gs_stKeyQueue, pstData);
 
-    // 이전 상태 복원
-    kSetInterruptFlag(bPreviousInterrupt);
+    // 임계 영역 끝
+    kUnlockForSystemData(bPreviousInterrupt);
     return bResult;
 }

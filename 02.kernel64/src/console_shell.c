@@ -7,6 +7,7 @@
 #include "rtc.h"
 #include "assembly_utility.h"
 #include "task.h"
+#include "synchronization.h"
 
 
 // 커맨드 테이블 정의
@@ -27,8 +28,9 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] =
     {"changepriority", "change task priority, ex)changepriority 1(ID) 2(priority)",
         kChangeTaskPriority},
     {"tasklist", "show task list", kShowTaskList},
-    {"killtask", "end task, ex)killtask 1(ID)", kKillTask},
+    {"killtask", "end task, ex)killtask 1(ID) or 0xffffffff(all task)", kKillTask},
     {"cpuload", "show processor load", kCPULoad},
+    {"testmutex", "test mutex function", kTestMutex},
 };
 
 // 셸의 메인 루프
@@ -517,6 +519,7 @@ static void kKillTask(const char* pcParameterBuffer){
     PARAMETERLIST stList;
     char vcID[30];
     qword qwID;
+    TCB* pstTCB;
 
     // 파라미터를 추출
     kInitializeParameter(&stList, pcParameterBuffer);
@@ -530,16 +533,88 @@ static void kKillTask(const char* pcParameterBuffer){
         qwID = kAToI(vcID, 10);
     }
 
-    kPrintf("kill task ID [0x%q] ", qwID);
-    if(kEndTask(qwID) == true){
-        kPrintf("success\n");
+    // 특정 ID만 종료하는 경우
+    if(qwID != 0xffffffff){
+        kPrintf("kill task ID [0x%q] ", qwID);
+        if(kEndTask(qwID) == true){
+            kPrintf("success\n");
+        }
+        else{
+            kPrintf("fail\n");
+        }
     }
+
+    // 콘솔 셸과 유휴 태스크를 제외하고 모든 태스크 종료
     else{
-        kPrintf("fail\n");
+        for(int i=2; i<TASK_MAXCOUNT; i++){
+            pstTCB = kGetTCBInTCBPool(i);
+            qwID = pstTCB->stLink.qwID;
+            if((qwID >> 32) != 0){
+                kPrintf("kill task ID [0x%q]", qwID);
+                if(kEndTask(qwID) == true){
+                    kPrintf("success\n");
+                }
+                else{
+                    kPrintf("fail\n");
+                }
+            }
+        }
     }
 }
 
 // 프로세서의 사용률 표시
 static void kCPULoad(const char* pcParameterBuffer){
     kPrintf("processor load: %d%%\n", kGetProcessorLoad());
+}
+
+// 뮤텍스 테스트용 뮤텍스와 변수
+static MUTEX gs_stMutex;
+static volatile qword gs_qwAdder;
+
+// 뮤텍스를 테스트하는 태스크
+static void kPrintNumberTask(){
+    qword qwTickCount;
+
+    // 50ms 정도 대기하여 콘솔 셸이 출력하는 메시지와 겹치지 않도록 함
+    qwTickCount = kGetTickCount();
+    while((kGetTickCount() - qwTickCount) < 50){
+        kSchedule();
+    }
+
+    // 루프를 돌며넛 숫자를 출력
+    for(int i=0; i<5; i++){
+        kLock(&(gs_stMutex));
+        kPrintf("task ID [0x%q] value[%d]\n", kGetRunningTask()->stLink.qwID, gs_qwAdder);
+
+        gs_qwAdder += 1;
+        kUnlock(&(gs_stMutex));
+
+        // 프로세서 소모를 늘리려고 추가한 코드
+        for(volatile int j=0; j<30000; j++);
+    }
+
+    // 모든 태스크가 종료할 때까지 1초 정도 대기
+    qwTickCount = kGetTickCount();
+    while((kGetTickCount() - qwTickCount) < 1000){
+        kSchedule();
+    }
+
+    // 태스크 종료
+    kExitTask();
+}
+
+// 뮤텍스를 테스트하는 태스크 생성
+static void kTestMutex(const char* pcParameterBuffer){
+    gs_qwAdder = 1;
+    int i;
+
+    // 뮤텍스 초기화
+    kInitializeMutex(&gs_stMutex);
+
+    for(i=0; i<3; i++){
+        // 뮤텍스를 테스트하는 테스크를 3개 생성
+        kCreateTask(TASK_FLAGS_LOW, (qword)kPrintNumberTask);
+    }
+    kPrintf("wait until %d task end...\n", i);
+    kGetch();
 }
