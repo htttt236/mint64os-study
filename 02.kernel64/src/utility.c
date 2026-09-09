@@ -318,3 +318,14 @@ int kVSPrintf(char* pcBuffer, const char* pcFormatString, va_list ap){
 qword kGetTickCount(){
     return g_qwTickCount;
 }
+
+// 밀리세컨드 동안 대기
+void kSleep(qword qwMillisecond){
+    qword qwLastTickCount;
+
+    qwLastTickCount = g_qwTickCount;
+
+    while((g_qwTickCount - qwLastTickCount) <= qwMillisecond){
+        kSchedule();
+    }
+}

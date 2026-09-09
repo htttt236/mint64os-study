@@ -22,6 +22,7 @@ void kReverseString(char* pcBuffer);
 int kSprintf(char* pcBuffer, const char* pcFormatString, ...);
 int kVSPrintf(char* pcBuffer, const char* pcFormatString, va_list ap);
 qword kGetTickCount();
+void kSleep(qword qwMillisecond);
 
 
 extern volatile qword g_qwTickCount;
