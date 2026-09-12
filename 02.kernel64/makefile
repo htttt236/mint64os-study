@@ -1,5 +1,5 @@
 GCC = x86_64-elf-gcc -ffreestanding -m64 -O2 -mno-red-zone -mcmodel=large \
-	-mno-sse -mno-sse2 -mno-sse3 -mno-mmx -fno-pic -fno-pie -fno-builtin
+	-fno-pic -fno-pie -fno-builtin -fno-tree-vectorize
 LD = x86_64-elf-ld -T linker.ld
 OBJCOPY = x86_64-elf-objcopy -j .text -j .data -j .rodata -j .bss -S -O binary
 

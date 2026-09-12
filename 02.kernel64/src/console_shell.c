@@ -33,6 +33,7 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] =
     {"testmutex", "test mutex function", kTestMutex},
     {"testthread", "Test Thread And Process Function", kTestThread},
     {"showmatrix", "Show Matrix Screen", kShowMatrix},
+    { "testpie", "Test PIE Calculation", kTestPIE },
 };
 
 // 셸의 메인 루프
@@ -732,5 +733,69 @@ static void kShowMatrix(const char* pcParameterBuffer){
     }
     else{
         kPrintf("matrix process create fail\n");
+    }
+}
+
+// FPU를 테스트하는 태스크
+static void kFPUTestTask(void){
+    double dValue1;
+    double dValue2;
+    TCB* pstRunningTask;
+    qword qwCount = 0;
+    qword qwRandomValue;
+    int iOffset;
+    char vcData[4] = {'-', '\\', '|', '/'};
+    CHARACTER* pstScreen = (CHARACTER*) CONSOLE_VIDEOMEMORYADDRESS;
+
+    pstRunningTask = kGetRunningTask();
+
+    // 자신의 ID를 얻어서 화면 오프셋으로 사용
+    iOffset = (pstRunningTask->stLink.qwID & 0xffffffff) * 2;
+    iOffset = CONSOLE_WIDTH * CONSOLE_HEIGHT - (iOffset & (CONSOLE_WIDTH * CONSOLE_HEIGHT));
+
+    // 루프를 무한히 반복하면서 동일한 계산을 수행
+    while(true){
+        dValue1 = 1;
+        dValue2 = 1;
+
+        // 테스트를 위해 동일한 계산을 2번 반복해서 실행
+        for(int i=0; i<10; i++){
+            qwRandomValue = kRandom();
+            dValue1 *= (double)qwRandomValue;
+            dValue2 *= (double)qwRandomValue;
+
+            kSleep(1);
+
+            qwRandomValue = kRandom();
+            dValue1 /= (double)qwRandomValue;
+            dValue2 /= (double)qwRandomValue;
+        }
+
+        if (dValue1 != dValue2){
+            kPrintf("value is not same [%f] != [%f]\n", dValue1, dValue2);
+            break;
+        }
+        qwCount++;
+
+        // 회전하는 바람개비를 표시
+        pstScreen[iOffset].bCharacter = vcData[qwCount % 4];
+
+        // 색깔 지정
+        pstScreen[iOffset].bAttribute = (iOffset % 15) + 1;
+    }
+}
+
+// 원주율(PIE)를 계산
+static void kTestPIE(const char* pcParameterBuffer){
+    double dResult;
+
+    kPrintf("PIE calculation test\n");
+    kPrintf("Result: 355 / 113 = ");
+    dResult = (double) 355 / 113;
+    kPrintf("%d.%d%d\n", (qword)dResult, ((qword)(dResult * 10) % 10),
+            ((qword)(dResult*100) % 10));
+    // 실수를 계산하는 태스크를 생성
+    for(int i = 0; i<100; i++){
+        kCreateTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (qword)kFPUTestTask);
     }
 }

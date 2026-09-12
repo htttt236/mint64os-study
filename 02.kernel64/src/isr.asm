@@ -4,7 +4,7 @@ SECTION .text
 
 GDT_KERNELDATASEGMENT equ 0x10
 extern kCommonExceptionHandler, kCommonInterruptHandler, kKeyboardHandler
-extern kTimerHandler
+extern kTimerHandler, kDeviceNotAvailableHandler
 
 global kISRDivideError, kISRDebug, kISRNMI, kISRBreakPoint, kISROverflow
 global kISRBoundRangeExceeded, kISRInvalidOpcode, kISRDeviceNotAvailable
@@ -156,13 +156,14 @@ kISRInvalidOpcode:
 
 ; #7, Device Not Available ISR
 kISRDeviceNotAvailable:
-    KSAVECONTEXT
+    KSAVECONTEXT    ; 콘텍스트를 저장한 뒤 셀렉터를 커널 데이터 디스크립터로 교체
 
+    ; 핸들러에 예외 번호를 삽입하고 핸들러 호출
     mov rdi, 7
-    call kCommonExceptionHandler
+    call kDeviceNotAvailableHandler
 
-    KLOADCONTEXT
-    iretq
+    KLOADCONTEXT    ; 콘텍스트를 복원
+    iretq           ; 인터럽트 처리를 완료하고 이전에 수행하던 코드로 복원
 
 ; #8, Double Fault ISR
 kISRDoubleFault:

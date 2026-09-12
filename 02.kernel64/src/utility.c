@@ -256,11 +256,13 @@ int kSprintf(char* pcBuffer, const char* pcFormatString, ...){
 
 // vsprintf() 함수의 내부구현
 int kVSPrintf(char* pcBuffer, const char* pcFormatString, va_list ap){
+    int k;
     int iBufferIndex = 0;
     int iFormatLength, iCopyLength;
     char* pcCopyString;
     qword qwValue;
     int iValue;
+    double dValue;
 
     // format string 길이 읽어서 길이만큼 데이터를 출력 버퍼에 출력
     iFormatLength = kStrLen(pcFormatString);
@@ -299,6 +301,27 @@ int kVSPrintf(char* pcBuffer, const char* pcFormatString, va_list ap){
                 iBufferIndex += kIToA(qwValue, pcBuffer + iBufferIndex, 16);
                 break;
             
+            case 'f':// 소수점 둘째 자리까지 실수를 출력
+                dValue = (double)(va_arg(ap, double));
+                // 셋째 자리에서 반올림 처리
+                dValue += 0.005;
+                // 소수점 둘째 자리부터 차례로 저장하여 버퍼를 뒤집음
+                pcBuffer[iBufferIndex] = '0' + (qword)(dValue * 100) % 10;
+                pcBuffer[iBufferIndex + 1] = '0' + (qword)(dValue * 10) % 10;
+                pcBuffer[iBufferIndex + 2] = '.';
+                for(k=0; ; k++){
+                    // 정수 부분이 0이면 종료
+                    if(((qword)dValue == 0) && (k != 0)){
+                        break;
+                    }
+                    pcBuffer[iBufferIndex + 3 + k] = '0' + ((qword)dValue % 10);
+                    dValue = dValue / 10;
+                }
+                pcBuffer[iBufferIndex + 3 + k] = '\0';
+                // 값이 저장된 길이만큼 뒤집고 길이를 증가시킴
+                kReverseString(pcBuffer + iBufferIndex);
+                iBufferIndex += 3 + k;
+                break;
             default:// 그대로 출력
                 pcBuffer[iBufferIndex] = pcFormatString[i];
                 iBufferIndex++;

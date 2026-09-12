@@ -16,5 +16,10 @@ qword kReadTSC();
 void kSwitchContext(CONTEXT* pstCurrentContext, CONTEXT* pstNextContext);
 void kHlt();
 bool kTestAndSet(volatile byte* pbDestination, byte bCompare, byte bSource);
+void kInitializeFPU();
+void kSaveFPUContext(void* pvFPUContext);
+void kLoadFPUContext(void* pvFPUContext);
+void kSetTS();
+void kClearTS();
 
 #endif /*__ASSEMBLY_UTILITY_H__*/
