@@ -57,6 +57,10 @@ static void kCreateThreadTask();
 static void kTestThread(const char* pcParameterBuffer);
 static void kShowMatrix(const char* pcParameterBuffer);
 static void kTestPIE(const char* pcParameterBuffer);
+static void kShowDyanmicMemoryInformation(const char* pcParameterBuffer);
+static void kTestSequentialAllocation(const char* pcParameterBuffer);
+static void kRandomAllocationTask();
+static void kTestRandomAllocation(const char* pcParameterBuffer);
 
 
 #endif /*__CONSOLE_SHELL__*/

@@ -8,6 +8,7 @@
 #include "console_shell.h"
 #include "task.h"
 #include "pit.h"
+#include "dynamic_memory.h"
 
 
 void main(){
@@ -41,6 +42,11 @@ void main(){
     kPrintf("pass\n");
     // 1ms당 한 번씩 인터럽트가 발생하도록 설정
     kInitializePIT(MSTOCOUNT(1), 1);
+
+    // 동적 메모리 초기화
+    kPrintf("dynamic memory initialize......");
+    kInitializeDynamicMemory();
+    kPrintf("pass\n");
 
     kPrintf("keyboard activate and queue initialize......");
     // 키보드 활성화
