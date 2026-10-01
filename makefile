@@ -1,7 +1,7 @@
 all: run
 
 run: disk.img
-	qemu-system-x86_64 -hda $<
+	qemu-system-x86_64 -m 64 -hda $< -hdb hdd.img -rtc base=localtime -M pc
 
 disk.img: 00.bootloader/bootloader.bin 01.kernel32/kernel32.bin 02.kernel64/kernel64.bin
 	cat $^ > $@

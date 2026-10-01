@@ -8,6 +8,7 @@ void kCommonInterruptHandler(int iVectorNumber);
 void kKeyboardHandler(int iVectorNumber);
 void kTimerHandler(int iVectorNumber);
 void kDeviceNotAvailableHandler(int iVectorNumber);
+void kHDDHandler(int iVectorNumber);
 
 
 #endif /*__INTERRUPT_HANDLER_H__*/

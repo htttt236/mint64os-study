@@ -6,6 +6,8 @@
 
 byte kInPortByte(word wPort);
 void kOutPortByte(word wPort, byte bData);
+word kInPortWord(word wPort);
+void kOutPortWord(word wPort, word wData);
 void kLoadGDTR(qword qwGDTRAdress);
 void kLoadTR(word wTSSegmentOffset);
 void kLoadIDTR(qword qwIDTRAddress);

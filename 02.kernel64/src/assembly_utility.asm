@@ -2,7 +2,7 @@
 SECTION .text
 
 
-global kInPortByte, kOutPortByte
+global kInPortByte, kOutPortByte, kInPortWord, kOutPortWord
 global kLoadGDTR, kLoadTR, kLoadIDTR
 global kEnableInterrupt, kDisableInterrupt, kReadRFLAGS
 global kReadTSC
@@ -34,6 +34,35 @@ kOutPortByte:
     pop rax
     pop rdx
     ret
+
+; 포트로부터 2바이트 읽음
+; param: 포트 번호
+kInPortWord:
+    push rdx        ; 함수에서 임시로 사용하는 레지스터를 스택에 저장
+                    ; 함수의 마지막 부분에서 스택에 삽입된 값을 꺼내 복원
+    
+    mov rdx, rdi    ; RDX 레지스터에 파라미터 1(포트 번호)를 저장
+    mov rax, 0      ; RAX 레지스터를 초기화
+    in ax, dx       ; DX 레지스터에 저장된 포트 어드레스에서 두 바이트를 읽어
+                    ; AX 레지스터에 저장, AX 레지스터는 함수의 반환 값으로 사용됨
+    
+    pop rdx         ; 함수에서 사용이 끝난 레지스터를 복원
+    ret             ; 함수를 호출한 다음 코드의 위치로 복귀
+
+; 포트에 2바이트 씀
+; param: 포트 번호, 데이터
+kOutPortWord:
+    push rdx        ; 함수에서 임시로 사용하는 레지스터를 스택에 저장
+    push rax        ; 함수의 마지막 부분에서 스택에 삽입된 값을 꺼내 복원
+    
+    mov rdx, rdi    ; RDX 레지스터에 파라미터 1(포트 번호)를 저장
+    mov rax, rsi    ; RAX 레지스터에 파라미터 2(데이터)를 저장    
+    out dx, ax      ; DX 레지스터에 저장된 포트 어드레스에 AX 레지스터에 저장된
+                    ; 두 바이트를 씀
+    
+    pop rax         ; 함수에서 사용이 끝난 레지스터를 복원
+    pop rdx
+    ret             ; 함수를 호출한 다음 코드의 위치로 복귀
 
 
 kLoadGDTR:
