@@ -10,6 +10,7 @@
 #include "pit.h"
 #include "dynamic_memory.h"
 #include "harddisk.h"
+#include "file_system.h"
 
 
 void main(){
@@ -69,6 +70,15 @@ void main(){
     // 하드 디스크를 초기화
     kPrintf("HDD initialize.........");
     if(kInitializeHDD() == true){
+        kPrintf("pass\n");
+    }
+    else{
+        kPrintf("fail\n");
+    }
+
+    // 파일 시스템 초기화
+    kPrintf("file system initialize.........");
+    if(kInitializeFileSystem() == true){
         kPrintf("pass\n");
     }
     else{
