@@ -4,6 +4,9 @@
 #include "types.h"
 #include <stdarg.h>
 
+#define MIN( x, y )     ( ( ( x ) < ( y ) ) ? ( x ) : ( y ) )
+#define MAX( x, y )     ( ( ( x ) > ( y ) ) ? ( x ) : ( y ) )
+
 void kMemSet(void* pvDestination, byte bData, int iSize);
 int kMemCpy(void* pvDestination, const void* pvSource, int iSize);
 int kMemCmp(const void* pvDestination, const void* pvSource, int iSize);

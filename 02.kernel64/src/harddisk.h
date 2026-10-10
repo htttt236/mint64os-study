@@ -109,7 +109,7 @@ static bool kWaitForHDDReady(bool bPrimary);
 void kSetHDDInterruptFlag(bool bPrimary, bool bFlag);
 static bool kWaitForHDDInterrupt(bool bPrimary);
 bool kReadHDDInformation(bool bPrimary, bool bMaster, HDDINFORMATION* pstHDDInformation);
-static void kSwqpByteInWord(word* pwData, int iWordCount);
+static void kSwapByteInWord(word* pwData, int iWordCount);
 int kReadHDDSector(bool bPrimary, bool bMaster, dword dwLBA, int iSectorCount, char* pcBuffer);
 int kWriteHDDSector(bool bPrimary, bool bMaster, dword dwLBA, int iSectorCount, char* pcBuffer);
 

@@ -207,11 +207,11 @@ bool kReadHDDInformation(bool bPrimary, bool bMaster, HDDINFORMATION* pstHDDInfo
     }
 
     // 문자열은 바이트 순서로 다시 반환
-    kSwqpByteInWord(pstHDDInformation->vwModelNumber,
+    kSwapByteInWord(pstHDDInformation->vwModelNumber,
             sizeof(pstHDDInformation->vwModelNumber) / 2);
-    kSwqpByteInWord(pstHDDInformation->vwSerialNumber,
+    kSwapByteInWord(pstHDDInformation->vwSerialNumber,
             sizeof(pstHDDInformation->vwSerialNumber) / 2);
-    kSwqpByteInWord(pstHDDInformation->vwFirmwareRevision,
+    kSwapByteInWord(pstHDDInformation->vwFirmwareRevision,
             sizeof(pstHDDInformation->vwFirmwareRevision) / 2);
     
 
@@ -221,7 +221,7 @@ bool kReadHDDInformation(bool bPrimary, bool bMaster, HDDINFORMATION* pstHDDInfo
 }
 
 // word 내의 바이트 순서를 바꿈
-static void kSwqpByteInWord(word* pwData, int iWordCount){
+static void kSwapByteInWord(word* pwData, int iWordCount){
     int i;
     word wTemp;
 
