@@ -60,7 +60,7 @@ static bool kWaitForHDDNoBusy(bool bPrimary){
     // 일정 시간 동안 하드 디스크의 busy가 헤재될 때까지 대기
     while((kGetTickCount() - qwStartTickCount) <= HDD_WAITTIME){
         // HDD의 상태를 반환
-        bStatus = kReadHDDStatus(bPrimary);
+        bStatus = kReadHDDAlternateStatus(bPrimary);
 
         // busy 비트(비트 7)이 설정되어 있지 않으면 busy가 해제된 것이므로 종료
         if((bStatus & HDD_STATUS_BUSY) != HDD_STATUS_BUSY){
@@ -82,7 +82,7 @@ static bool kWaitForHDDReady(bool bPrimary){
     // 일정 시간 동안 하드 디스크가 ready가 될 때까지 대기
     while((kGetTickCount() - qwStartTickCount) <= HDD_WAITTIME){
         // HDD의 상태를 반환
-        bStatus = kReadHDDStatus(bPrimary);
+        bStatus = kReadHDDAlternateStatus(bPrimary);
 
         // ready 비트(비트 6)이 설정되어 있으면 데이터를 받을 준비가 된 것이므로 종료
         if((bStatus & HDD_STATUS_READY) == HDD_STATUS_READY){
@@ -239,7 +239,7 @@ int kReadHDDSector(bool bPrimary, bool bMaster, dword dwLBA, int iSectorCount, c
     byte bDriveFlag;
     byte bStatus;
     long lReadCount = 0;
-    bool bWaitResult;
+    /*bool bWaitResult;*/
 
     // 범위 검사. 최대 256 섹터를 처리할 수 있음
     if((gs_stHDDManager.bHDDDetected == false) ||
@@ -312,6 +312,37 @@ int kReadHDDSector(bool bPrimary, bool bMaster, dword dwLBA, int iSectorCount, c
     kOutPortByte(wPortBase + HDD_PORT_INDEX_COMMAND, HDD_COMMAND_READ);
 
     //==========================================================================
+    //  DRQ polling 후, 데이터 수신
+    //==========================================================================
+
+    // 섹터 수만큼 루프를 돌면서 데이터 수신
+    for(i=0; i<iSectorCount; i++){
+        // BSY 해제 + DRQ 설정(안정 상태)이 될 때까지 대기
+        if(kWaitForHDDDataRequest(bPrimary, &bStatus) == false){
+            kPrintf("\n[HDD READ TIMEOUT] LBA=%X sector=%d/%d "
+                    "status=%X primary=%d\n",
+                    dwLBA + i, i + 1, iSectorCount, bStatus, bPrimary);
+            // 동기화 처리
+            kUnlock(&(gs_stHDDManager.stMutex));
+            // 부분 전송이 성공으로 오인되지 않도록 0을 반환
+            return 0;
+        }
+
+        // 한 섹터를 읽음
+        for(j=0; j<512/2; j++){
+            ((word*)pcBuffer)[lReadCount++] = kInPortWord(wPortBase + HDD_PORT_INDEX_DATA);
+        }
+
+        // 드라이브가 다음 블록을 준비할 시간을 줌
+        kWaitHDD400ns(bPrimary);
+    }
+
+    // 동기화 처리
+    kUnlock(&(gs_stHDDManager.stMutex));
+    return i;
+
+/*
+    //==========================================================================
     //  인터럽트 대기 후, 데이터 수신
     //==========================================================================
 
@@ -349,6 +380,7 @@ int kReadHDDSector(bool bPrimary, bool bMaster, dword dwLBA, int iSectorCount, c
     // 동기화 처리
     kUnlock(&(gs_stHDDManager.stMutex));
     return i;
+*/
 }
 
 // 하드 디스크에 섹터를 씁
@@ -360,7 +392,7 @@ int kWriteHDDSector(bool bPrimary, bool bMaster, dword dwLBA, int iSectorCount, 
     byte bDriveFlag;
     byte bStatus;
     long lReadCount = 0;
-    bool bWaitResult;
+    /*bool bWaitResult;*/
 
     // 범위 검사. 최대 256섹터를 처리할 수 있음
     if((gs_stHDDManager.bCanWrite == false) ||
@@ -427,6 +459,67 @@ int kWriteHDDSector(bool bPrimary, bool bMaster, dword dwLBA, int iSectorCount, 
     // 커맨드 전송
     kOutPortByte(wPortBase + HDD_PORT_INDEX_COMMAND, HDD_COMMAND_WRITE);
 
+
+
+    // 첫 번째 블록을 보낼 수 있는 상태가 될 때까지 대기
+    if(kWaitForHDDDataRequest(bPrimary, &bStatus) == false){
+        kPrintf("\n[HDD WRITE TIMEOUT] LBA=%X status=%X primary=%d\n",
+                dwLBA, bStatus, bPrimary);
+        // 동기화 처리
+        kUnlock(&(gs_stHDDManager.stMutex));
+        return 0;
+    }
+
+    //==========================================================================
+    //  데이터 송신
+    //==========================================================================
+
+    // 섹터 수만큼 루프를 돌면서 데이터 송신
+    for(i=0; i<iSectorCount; i++){
+        // 한 섹터를 씀
+        for(j=0; j<512/2; j++){
+            kOutPortWord(wPortBase + HDD_PORT_INDEX_DATA, ((word*)pcBuffer)[lReadCount++]);
+        }
+
+        // 블록 전송이 끝난 뒤 드라이브가 상태를 갱신할 시간을 줌
+        kWaitHDD400ns(bPrimary);
+
+        // 다음 블록을 보낼 수 있는 상태(BSY 해제 + DRQ 설정)가 될 때까지 대기
+        if(i < iSectorCount - 1){
+            if(kWaitForHDDDataRequest(bPrimary, &bStatus) == false){
+                kPrintf("\n[HDD WRITE TIMEOUT] LBA=%X sector=%d/%d "
+                        "status=%X primary=%d\n",
+                        dwLBA + i, i + 1, iSectorCount, bStatus, bPrimary);
+                // 동기화 처리
+                kUnlock(&(gs_stHDDManager.stMutex));
+                return 0;
+            }
+        }
+        // 마지막 블록이면 명령 완료(BSY 해제)까지 대기하고 결과를 확인
+        else{
+            if(kWaitForHDDNoBusy(bPrimary) == false){
+                kPrintf("\n[HDD WRITE BUSY TIMEOUT] LBA=%X primary=%d\n",
+                        dwLBA, bPrimary);
+                // 동기화 처리
+                kUnlock(&(gs_stHDDManager.stMutex));
+                return 0;
+            }
+
+            bStatus = kReadHDDAlternateStatus(bPrimary);
+            if((bStatus & HDD_STATUS_ERROR) == HDD_STATUS_ERROR){
+                kPrintf("\n[HDD WRITE ERROR] LBA=%X status=%X\n",
+                        dwLBA, bStatus);
+                // 동기화 처리
+                kUnlock(&(gs_stHDDManager.stMutex));
+                return 0;
+            }
+        }
+    }
+
+    // 동기화 처리
+    kUnlock(&(gs_stHDDManager.stMutex));
+    return i;
+/*
     // 데이터 송신이 가능할 때까지 대기
     while(true){
         bStatus = kReadHDDStatus(bPrimary);
@@ -482,4 +575,59 @@ int kWriteHDDSector(bool bPrimary, bool bMaster, dword dwLBA, int iSectorCount, 
     // 동기화 처리
     kUnlock(&(gs_stHDDManager.stMutex));
     return i;
+*/
+}
+
+// 인터럽트를 acknowledge하지 않는 Alternate Status 레지스터를 읽음
+// 일반 Status 레지스터(0x1f7/0x177)는 읽는 순간 보류 중인 IRQ가 지워지므로
+// 상태 확인에는 이 함수를 사용해야 함
+static byte kReadHDDAlternateStatus(bool bPrimary){
+    if(bPrimary == true){
+        return kInPortByte(HDD_PORT_PRIMARYBASE + HDD_PORT_INDEX_DIGITALOUTPUT);
+    }
+    return kInPortByte(HDD_PORT_SECONDARYBASE + HDD_PORT_INDEX_DIGITALOUTPUT);
+}
+
+// BSY가 해제되고 DRQ가 설정될 때까지 일정 시간 대기
+// 이 조건은 드라이브가 준비될 때까지 유지되는 안정 상태이므로
+// polling으로 확실하게 검출할 수 있음
+static bool kWaitForHDDDataRequest(bool bPrimary, byte* pbStatus){
+    qword qwStartTickCount;
+    byte bStatus;
+
+    qwStartTickCount = kGetTickCount();
+
+    while(true){
+        bStatus = kReadHDDAlternateStatus(bPrimary);
+
+        // 에러가 발생하면 즉시 종료
+        if((bStatus & HDD_STATUS_ERROR) == HDD_STATUS_ERROR){
+            *pbStatus = bStatus;
+            return false;
+        }
+
+        // busy가 아니고 데이터 요청이 설정되어 있으면 전송 가능
+        if(((bStatus & HDD_STATUS_BUSY) != HDD_STATUS_BUSY) &&
+            ((bStatus & HDD_STATUS_DATAREQUEST) == HDD_STATUS_DATAREQUEST)){
+            *pbStatus = bStatus;
+            return true;
+        }
+
+        if((kGetTickCount() - qwStartTickCount) > HDD_WAITTIME){
+            *pbStatus = bStatus;
+            return false;
+        }
+
+        //kSleep(1);
+    }
+}
+
+// Alternate Status를 여러 번 읽어 약 400ns 동안 대기
+// 블록 전송 직후 드라이브가 다음 블록의 상태를 준비할 시간을 줌
+static void kWaitHDD400ns(bool bPrimary){
+    int i;
+
+    for(i=0; i<15; i++){
+        kReadHDDAlternateStatus(bPrimary);
+    }
 }

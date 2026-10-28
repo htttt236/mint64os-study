@@ -7,21 +7,111 @@
 volatile qword g_qwTickCount = 0;
 
 // 특정 값으로 메모리 채우기
+void kMemSet(void* pvDestination, byte bData, int iSize)
+{
+    int i;
+    qword qwData;
+    int iRemainByteStartOffset;
+    
+    // 8 바이트 데이터를 채움
+    qwData = 0;
+    for(i = 0 ; i < 8 ; i++)
+    {
+        qwData = (qwData << 8) | bData;
+    }
+    
+    // 8 바이트씩 먼저 채움
+    for(i = 0 ; i < (iSize / 8) ; i++)
+    {
+        ((qword*) pvDestination)[i] = qwData;
+    }
+    
+    // 8 바이트씩 채우고 남은 부분을 마무리
+    iRemainByteStartOffset = i * 8;
+    for(i = 0 ; i < (iSize % 8) ; i++)
+    {
+        ((char*) pvDestination)[iRemainByteStartOffset++] = bData;
+    }
+}
+/*
 void kMemSet(void* pvDestination, byte bData, int iSize){
     for(int i=0; i<iSize; i++){
         ((byte*)pvDestination)[i] = bData;
     }
 }
+*/
 
 // 메모리 복사
+int kMemCpy(void* pvDestination, const void* pvSource, int iSize)
+{
+    int i;
+    int iRemainByteStartOffset;
+
+    // 8바이트씩 먼저 복사
+    for(i=0; i<(iSize / 8); i++)
+    {
+        ((qword*)pvDestination)[i] = ((qword*)pvSource)[i];
+    }
+
+    // 8바이트씩 채우고 남은 부분을 마무리
+    iRemainByteStartOffset = i * 8;
+    for(i=0; i<(iSize % 8); i++)
+    {
+        ((char*)pvDestination)[iRemainByteStartOffset] =
+            ((char*)pvSource)[iRemainByteStartOffset];
+        iRemainByteStartOffset++;
+    }
+    return iSize;
+}
+/*
 int kMemCpy(void* pvDestination, const void* pvSource, int iSize){
     for(int i=0; i<iSize; i++){
         ((byte*)pvDestination)[i] = ((byte*)pvSource)[i];
     }
     return iSize;
 }
+*/
 
 // 메모리 비교
+int kMemCmp(const void* pvDestination, const void* pvSource, int iSize)
+{
+    int i, j;
+    int iRemainByteStartOffset;
+    qword qwValue;
+    char cValue;
+    
+    for(i = 0 ; i < (iSize / 8) ; i++)
+    {
+        qwValue = ((qword*) pvDestination)[i] - ((qword*) pvSource)[i];
+
+        // 틀린 위치를 정확하게 찾아서 그 값을 반환
+        if(qwValue != 0)
+        {
+            for(i = 0 ; i < 8 ; i++)
+            {
+                if(((qwValue >> (i * 8)) & 0xFF) != 0)
+                {
+                    return (qwValue >> (i * 8)) & 0xFF;
+                }
+            }
+        }
+    }
+    
+    // 8 바이트씩 채우고 남은 부분을 마무리
+    iRemainByteStartOffset = i * 8;
+    for(i = 0 ; i < (iSize % 8) ; i++)
+    {
+        cValue = ((char*) pvDestination)[iRemainByteStartOffset] -
+            ((char*) pvSource)[iRemainByteStartOffset];
+        if(cValue != 0)
+        {
+            return cValue;
+        }
+        iRemainByteStartOffset++;
+    }    
+    return 0;
+}
+/*
 int kMemCmp(const void* pvDestination, const void* pvSource, int iSize){
     int cTemp;
     for(int i=0; i<iSize; i++){
@@ -32,6 +122,7 @@ int kMemCmp(const void* pvDestination, const void* pvSource, int iSize){
     }
     return 0;
 }
+*/
 
 // rflags 레지스터의 인터럽트 플래그를 변경하고 이전 인터럽트 플래그의 상태를 반환
 bool kSetInterruptFlag(bool bEnableInterrupt){

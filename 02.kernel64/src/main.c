@@ -67,14 +67,9 @@ void main(){
     kEnableInterrupt();
     kPrintf("pass\n");
 
-    // 하드 디스크를 초기화
-    kPrintf("HDD initialize.........");
-    if(kInitializeHDD() == true){
-        kPrintf("pass\n");
-    }
-    else{
-        kPrintf("fail\n");
-    }
+    // 유휴 테스크 생성
+    kCreateTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE, 0, 0,
+                (qword)kIdleTask);
 
     // 파일 시스템 초기화
     kPrintf("file system initialize.........");
@@ -86,7 +81,7 @@ void main(){
     }
 
     // 유휴 태스크를 시스템 스레드로 생성하고 셀을 시작
-    kCreateTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE, 0, 0,
-                (qword)kIdleTask);
+    //kCreateTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE, 0, 0,
+    //            (qword)kIdleTask);
     kStartConsoleShell();
 }

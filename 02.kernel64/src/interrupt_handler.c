@@ -147,7 +147,7 @@ void kDeviceNotAvailableHandler(int iVectorNumber){
     // FPU를 사용한 태스크 ID를 현재 태스크로 변경
     kSetLastFPUUsedTaskID(pstCurrentTask->stLink.qwID);
 }
-
+/*
 // 하드 디스크에서 발생하는 인터럽트의 핸들러
 void kHDDHandler(int iVectorNumber){
     char vcBuffer[] = "[INT:  , ]";
@@ -176,6 +176,38 @@ void kHDDHandler(int iVectorNumber){
         // 두 번째 PATA 포트의 인터럽트 발생 여부를 true로 설정
         kSetHDDInterruptFlag(false, true);
     }
+
+    // EOI 전송
+    kSendEOIToPIC(iVectorNumber - PIC_IRQSTARTVECTOR);
+}
+*/
+
+// 하드 디스크에서 발생하는 인터럽트의 핸들러
+void kHDDHandler(int iVectorNumber){
+    char vcBuffer[] = "[INT:  , ]";
+    static int g_iHDDInterruptCount = 0;
+
+    // 첫 번째 PATA 포트의 인터럽트 벡터(IRQ 14) 처리
+    if(iVectorNumber - PIC_IRQSTARTVECTOR == 14){
+        // 일반 Status 레지스터를 읽어 드라이브의 INTRQ를 해제
+        kInPortByte(HDD_PORT_PRIMARYBASE + HDD_PORT_INDEX_STATUS);
+        // 첫 번째 PATA 포트의 인터럽트 발생 여부를 true로 설정
+        kSetHDDInterruptFlag(true, true);
+    }
+    // 두 번째 PATA 포트의 인터럽트 벡터(IRQ 15) 처리
+    else{
+        // 일반 Status 레지스터를 읽어 드라이브의 INTRQ를 해제
+        kInPortByte(HDD_PORT_SECONDARYBASE + HDD_PORT_INDEX_STATUS);
+        // 두 번째 PATA 포트의 인터럽트 발생 여부를 true로 설정
+        kSetHDDInterruptFlag(false, true);
+    }
+
+    // 인터럽트 발생 표시는 acknowledge와 플래그 설정을 마친 뒤에 출력
+    vcBuffer[5] = '0' + iVectorNumber / 10;
+    vcBuffer[6] = '0' + iVectorNumber % 10;
+    vcBuffer[8] = '0' + g_iHDDInterruptCount;
+    g_iHDDInterruptCount = (g_iHDDInterruptCount + 1) % 10;
+    kPrintStringXY(10, 0, vcBuffer);
 
     // EOI 전송
     kSendEOIToPIC(iVectorNumber - PIC_IRQSTARTVECTOR);

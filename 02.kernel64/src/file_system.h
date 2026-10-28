@@ -5,6 +5,7 @@
 #include "synchronization.h"
 #include "harddisk.h"
 #include "task.h"
+#include "cache_manager.h"
 
 
 // MINT 파일 시스템 시그니처(Signature)
@@ -179,6 +180,9 @@ typedef struct kFileSystemManagerStruct{
 
     // 핸들 풀(Handle Pool)의 어드레스
     FILE* pstHandlePool;
+
+    // 캐시를 사용하는지 여부
+    bool bCacheEnable;
 }FILESYSTEMMANAGER;
 
 
@@ -215,6 +219,8 @@ void kRewindDirectory(DIR* pstDirectory);
 int kCloseDirectory(DIR* pstDirectory);
 bool kWriteZero(FILE* pstFile, dword dwCount);
 bool kIsFileOpened(const DIRECTORYENTRY* pstEntry);
+bool kFlushFileSystemCache();
+
 
 static void* kAllocateFileDirectoryHandle();
 static void kFreeFileDirectoryHandle(FILE* pstFile);
@@ -223,7 +229,16 @@ static bool kCreateFile(const char* pcFileName, DIRECTORYENTRY* pstEntry,
 static bool kFreeClusterUntilEnd(dword dwClusterIndex);
 static bool kUpdateDirectoryEntry(FILEHANDLE* pstFileHandle);
 
+static bool kInternalReadClusterLinkTableWithoutCache(dword dwOffset, byte* pbBuffer);
+static bool kInternalReadClusterLinkTableWithCache(dword dwOffset, byte* pbBuffer);
+static bool kInternalWriteClusterLinkTableWithoutCache(dword dwOffset, byte* pbBuffer);
+static bool kInternalWriteClusterLinkTableWithCache(dword dwOffset, byte* pbBuffer);
+static bool kInternalReadClusterWithoutCache(dword dwOffset, byte* pbBuffer);
+static bool kInternalReadClusterWithCache(dword dwOffset, byte* pbBuffer);
+static bool kInternalWriteClusterWithoutCache(dword dwOffset, byte* pbBuffer);
+static bool kInternalWriteClusterWithCache(dword dwOffset, byte* pbBuffer);
 
+static CACHEBUFFER* kAllocateCacheBufferWithFlush(int iCacheTableIndex);
 
 
 #endif /*__FILE_SYSTEM__*/

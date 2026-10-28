@@ -113,5 +113,8 @@ static void kSwapByteInWord(word* pwData, int iWordCount);
 int kReadHDDSector(bool bPrimary, bool bMaster, dword dwLBA, int iSectorCount, char* pcBuffer);
 int kWriteHDDSector(bool bPrimary, bool bMaster, dword dwLBA, int iSectorCount, char* pcBuffer);
 
+static byte kReadHDDAlternateStatus(bool bPrimary);
+static bool kWaitForHDDDataRequest(bool bPrimary, byte* pbStatus);
+static void kWaitHDD400ns(bool bPrimary);
 
 #endif /*__HARDDISK_H__*/
