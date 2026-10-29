@@ -20,6 +20,7 @@ typedef struct kListManagerStruct{
     void* pvTail;   // 마지막 데이터 주소
 }LIST;
 
+#pragma pack(pop)
 
 void kInitializeList(LIST* pstList);
 int kGetListCount(const LIST* pstList);

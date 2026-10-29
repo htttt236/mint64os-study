@@ -86,6 +86,8 @@ typedef struct kHDDInformationStruct{
     word vwReserved3[196];
 }HDDINFORMATION;
 
+#pragma pack(pop)
+
 // 하드 디스크를 관리하는 구조체
 typedef struct kHDDManagerStruct{
     // HDD 존재 여부와 쓰기를 수행할 수 있는지 여부

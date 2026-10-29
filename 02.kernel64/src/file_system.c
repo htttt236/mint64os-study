@@ -796,6 +796,7 @@ static bool kCreateFile(const char* pcFileName, DIRECTORYENTRY* pstEntry,
 
     // 빈 클러스터를 찾아서 할당된 것으로 설정
     dwCluster = kFindFreeCluster();
+    kPrintf("CreateFile: dwCluster=[%d]\n", dwCluster); // 추가
     if( ( dwCluster == FILESYSTEM_LASTCLUSTER ) ||
         ( kSetClusterLinkData( dwCluster, FILESYSTEM_LASTCLUSTER ) == false ) )
     {

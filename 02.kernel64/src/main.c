@@ -11,6 +11,7 @@
 #include "dynamic_memory.h"
 #include "harddisk.h"
 #include "file_system.h"
+#include "serial_port.h"
 
 
 void main(){
@@ -79,6 +80,11 @@ void main(){
     else{
         kPrintf("fail\n");
     }
+
+    // 시리얼 포트 초기화
+    kPrintf("serial port initialize.........");
+    kInitializeSerialPort();
+    kPrintf("pass\n");
 
     // 유휴 태스크를 시스템 스레드로 생성하고 셀을 시작
     //kCreateTask(TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE, 0, 0,
