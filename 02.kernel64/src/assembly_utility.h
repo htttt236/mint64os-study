@@ -23,5 +23,6 @@ void kSaveFPUContext(void* pvFPUContext);
 void kLoadFPUContext(void* pvFPUContext);
 void kSetTS();
 void kClearTS();
+void kEnableGlobalLocalAPIC();
 
 #endif /*__ASSEMBLY_UTILITY_H__*/

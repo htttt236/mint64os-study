@@ -1,7 +1,8 @@
 all: run
 
 run: disk.img
-	qemu-system-x86_64 -m 64 -hda $< -hdb hdd.img -rtc base=localtime -M pc -serial tcp::4444,server,nowait
+	qemu-system-x86_64 -m 64 -hda $< -hdb hdd.img -rtc base=localtime -M pc \
+		-serial tcp::4444,server,nowait -smp 2,sockets=2,cores=1,threads=1
 
 disk.img: 00.bootloader/bootloader.bin 01.kernel32/kernel32.bin 02.kernel64/kernel64.bin
 	cat $^ > $@
